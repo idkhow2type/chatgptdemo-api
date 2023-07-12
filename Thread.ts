@@ -26,10 +26,13 @@ export default class Thread extends GenericInitialise {
         super.initialise();
         const userThreads = await this.user.getUserThreads();
         if (this._name) {
-            const namedThread = userThreads.find((thread) => thread.name === this._name) // bad name ik stfu
+            const namedThread = userThreads.find(
+                (thread) => thread.name === this._name
+            ); // bad name ik stfu
             if (namedThread) {
-                this._id= namedThread.id
-                this.refreshThread()
+                this._id = namedThread.id;
+                await this.refreshThread();
+                return;
             }
             const res = await request('new_chat', 'POST', {
                 body: JSON.stringify({

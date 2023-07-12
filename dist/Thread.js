@@ -15,7 +15,8 @@ export default class Thread extends GenericInitialise {
             const namedThread = userThreads.find((thread) => thread.name === this._name); // bad name ik stfu
             if (namedThread) {
                 this._id = namedThread.id;
-                this.refreshThread();
+                await this.refreshThread();
+                return;
             }
             const res = await request('new_chat', 'POST', {
                 body: JSON.stringify({
