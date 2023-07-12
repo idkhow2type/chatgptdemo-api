@@ -1,18 +1,17 @@
 import { parse } from 'node-html-parser';
-import { request } from './utils.js';
+import { request, GenericInitialise } from './utils.js';
 import { Headers } from 'node-fetch';
 
-export default class User {
+export default class User extends GenericInitialise {
     private _session: string;
     private _uid: string;
     private _token: string;
-    private _isInit: boolean;
     constructor(session: string = undefined) {
+        super();
         this._session = session;
-        this._isInit = false;
     }
     async initialise() {
-
+        super.initialise()
         const page = parse(
             await (
                 await request('', 'GET', {
@@ -24,20 +23,26 @@ export default class User {
         );
         this._uid = page.querySelector('#USERID').innerText;
         this._token = page.querySelector('#TTT').innerText;
-        this._isInit = true;
     }
 
     public get uid(): string {
-        if (!this._isInit) {
-            throw new Error('Uninitialised');
-        }
         return this._uid;
     }
 
     public get token(): string {
-        if (!this._isInit) {
-            throw new Error('Uninitialised');
-        }
         return this._token;
+    }
+
+    public get session(): string {
+        return this._session;
+    }
+
+    /**
+     * getUserThreads
+     */
+    public async getUserThreads() {
+        request('get_user_cbat', 'POST', {
+            body: JSON.stringify({ user_id: this.uid }),
+        });
     }
 }

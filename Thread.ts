@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { request } from './utils.js';
+import { request, XOR, GenericInitialise } from './utils.js';
 import User from './User.js';
 
 interface Message {
@@ -9,40 +9,41 @@ interface Message {
     bot_time: number;
 }
 
-export default class Thread {
+export default class Thread extends GenericInitialise {
     private _name: string;
     private _id: string;
     private _messages: Array<Message>;
-    private _isInit: boolean;
     readonly user: User;
-    constructor(name: string, user: User) {
-        this._name = name;
+    constructor(option: XOR<{ name: string }, { id: string }>, user: User) {
+        super();
+        this._name = option.name;
+        this._id = option.id;
         this.user = user;
         this._messages = [];
-        this._isInit = false;
     }
 
     public async initialise() {
-        const res = await request('new_chat', 'POST', {
-            body: JSON.stringify({
-                user_id: this.user.uid,
-            }),
-        });
-        this._id = (await res.json()).id_;
+        super.initialise()
+        if (this._name) {
+            const res = await request('new_chat', 'POST', {
+                body: JSON.stringify({
+                    user_id: this.user.uid,
+                }),
+            });
+            this._id = (await res.json()).id_;
 
-        await request('update_chat_name', 'POST', {
-            body: JSON.stringify({
-                chat_id: this._id,
-                chat_name: this._name,
-            }),
-        });
-        this._isInit = true;
+            await request('update_chat_name', 'POST', {
+                body: JSON.stringify({
+                    chat_id: this._id,
+                    chat_name: this._name,
+                }),
+            });
+        } else {
+            await this.refreshThread(this._id);
+        }
     }
 
     public set name(name: string) {
-        if (!this._isInit) {
-            throw new Error('Uninitialised');
-        }
         this.setNameAsync(name);
     }
     private async setNameAsync(name: string) {
@@ -55,33 +56,57 @@ export default class Thread {
     }
 
     public get name(): string {
-        if (!this._isInit) {
-            throw new Error('Uninitialised');
-        }
         return this._name;
     }
 
     public get id(): string {
-        if (!this._isInit) {
-            throw new Error('Uninitialised');
-        }
         return this._id;
     }
 
-    public get messages(): Array<Message> {
-        if (!this._isInit) {
-            throw new Error('Uninitialised');
-        }
+    public get messages(): ReadonlyArray<Message> {
         return this._messages;
     }
 
     /**
-     * sendMessage
+     * saveBotMessage
      */
+    public async saveBotMessage(
+        botMessage: string,
+        timestamp: number = Date.now()
+    ) {
+        return await request('update_messages', 'POST', {
+            body: JSON.stringify({
+                bot_response: botMessage,
+                chat_id: this._id,
+                timestamp,
+            }),
+        });
+    }
+
+    /**
+     * refreshMessages
+     */
+    public async refreshThread(id: string = this._id) {
+        const chat = await (
+            await request('get_chat', 'POST', {
+                body: JSON.stringify({
+                    chat_id: id,
+                }),
+            })
+        ).json();
+
+        this._messages = chat.messages;
+        this._id = id;
+        this._name = chat.chat_name;
+    }
+
     public async sendMessage(userMessage: string, save: boolean = true) {
-        if (!this._isInit) {
-            throw new Error('Uninitialised');
-        }
+        const message: Message = {
+            user: userMessage,
+            user_time: Date.now(),
+            bot: null,
+            bot_time: null,
+        };
 
         const reader = (
             await request('chat_api_stream', 'POST', {
@@ -105,6 +130,13 @@ export default class Thread {
             return prev + (JSON.parse(curr).choices[0].delta.content ?? '');
         });
 
-        
+        if (save) {
+            message.bot = content;
+            message.bot_time = Date.now();
+            this.saveBotMessage(content, message.bot_time); // this might be awaited, prob dont need to
+            this._messages.push(message);
+        }
+
+        return content;
     }
 }
