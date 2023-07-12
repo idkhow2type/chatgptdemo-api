@@ -83,6 +83,8 @@ export default class Thread extends GenericInitialise {
 
     /**
      * saveBotMessage
+     * the api lets the client save bot messages manually for some reason
+     * calling this is not recommended, but it is possible
      */
     public async saveBotMessage(
         botMessage: string,
