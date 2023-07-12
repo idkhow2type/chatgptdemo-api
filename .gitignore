@@ -2,3 +2,4 @@
 /node_modules
 /package-lock.json
 /test.json
+# this gonna be one weird gitignore
