@@ -10,7 +10,13 @@ export default class Thread extends GenericInitialise {
     }
     async initialise() {
         super.initialise();
+        const userThreads = await this.user.getUserThreads();
         if (this._name) {
+            const namedThread = userThreads.find((thread) => thread.name === this._name); // bad name ik stfu
+            if (namedThread) {
+                this._id = namedThread.id;
+                this.refreshThread();
+            }
             const res = await request('new_chat', 'POST', {
                 body: JSON.stringify({
                     user_id: this.user.uid,
@@ -25,7 +31,12 @@ export default class Thread extends GenericInitialise {
             });
         }
         else {
-            await this.refreshThread(this._id);
+            // There is a broken access control vulnerability in the api
+            // any user can view any thread if they have the thread id
+            // not our job to protect against this but its annoying to deal with
+            if (!userThreads.find((thread) => thread.id === this._id)) {
+                throw new Error('Thread not created by user');
+            }
         }
     }
     set name(name) {
