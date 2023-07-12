@@ -1,4 +1,8 @@
 import { GenericInitialise } from './utils.js';
+interface ThreadInfo {
+    id: string;
+    name: string;
+}
 export default class User extends GenericInitialise {
     private _session;
     private _uid;
@@ -11,5 +15,6 @@ export default class User extends GenericInitialise {
     /**
      * getUserThreads
      */
-    getUserThreads(): Promise<void>;
+    getUserThreads(): Promise<ThreadInfo[]>;
 }
+export {};

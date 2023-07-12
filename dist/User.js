@@ -29,9 +29,10 @@ export default class User extends GenericInitialise {
      * getUserThreads
      */
     async getUserThreads() {
-        request('get_user_cbat', 'POST', {
+        const infos = await (await request('get_user_cbat', 'POST', {
             body: JSON.stringify({ user_id: this.uid }),
-        });
+        })).json();
+        return infos.map((info) => ({ id: info._id, name: info.chat_name }));
     }
 }
 //# sourceMappingURL=User.js.map
