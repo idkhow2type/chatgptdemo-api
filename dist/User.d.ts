@@ -1,9 +1,9 @@
-import { GenericInitialise } from './utils.js';
+import { Base } from './utils.js';
 interface ThreadInfo {
     id: string;
     name: string;
 }
-export default class User extends GenericInitialise {
+export default class User extends Base {
     private _session;
     private _uid;
     private _token;

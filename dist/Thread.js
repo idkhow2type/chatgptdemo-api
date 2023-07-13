@@ -1,12 +1,18 @@
 import 'dotenv/config';
-import { request, GenericInitialise } from './utils.js';
-export default class Thread extends GenericInitialise {
+import { request, Base } from './utils.js';
+export default class Thread extends Base {
     constructor(option, user) {
         super();
         this._name = option.name;
         this._id = option.id;
         this.user = user;
         this._messages = [];
+        this._deleted = false;
+        this._decorGlobal(() => {
+            if (this._deleted) {
+                throw new Error('Thread deleted');
+            }
+        }, ['refresh', 'delete']);
     }
     async initialise() {
         super.initialise();
@@ -15,7 +21,7 @@ export default class Thread extends GenericInitialise {
             const namedThread = userThreads.find((thread) => thread.name === this._name); // bad name ik stfu
             if (namedThread) {
                 this._id = namedThread.id;
-                await this.refreshThread();
+                await this.refresh();
                 return;
             }
             const res = await request('new_chat', 'POST', {
@@ -60,6 +66,9 @@ export default class Thread extends GenericInitialise {
     get messages() {
         return this._messages;
     }
+    get deleted() {
+        return this._deleted;
+    }
     /**
      * saveBotMessage
      * the api lets the client save bot messages manually for some reason
@@ -77,15 +86,20 @@ export default class Thread extends GenericInitialise {
     /**
      * refreshMessages
      */
-    async refreshThread(id = this._id) {
-        const chat = await (await request('get_chat', 'POST', {
-            body: JSON.stringify({
-                chat_id: id,
-            }),
-        })).json();
-        this._messages = chat.messages;
+    async refresh(id = this._id) {
         this._id = id;
-        this._name = chat.chat_name;
+        try {
+            const chat = await (await request('get_chat', 'POST', {
+                body: JSON.stringify({
+                    chat_id: id,
+                }),
+            })).json();
+            this._messages = chat.messages;
+            this._name = chat.chat_name;
+        }
+        catch (error) {
+            this._deleted = true;
+        }
     }
     async sendMessage(userMessage, save = true) {
         const message = {
@@ -119,6 +133,17 @@ export default class Thread extends GenericInitialise {
             this._messages.push(message);
         }
         return content;
+    }
+    /**
+     * delete
+     */
+    async delete() {
+        await request('delete_chat', 'POST', {
+            body: JSON.stringify({
+                chat_id: this._id,
+            }),
+        });
+        this._deleted = true;
     }
 }
 //# sourceMappingURL=Thread.js.map

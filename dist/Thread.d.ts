@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { XOR, GenericInitialise } from './utils.js';
+import { XOR, Base } from './utils.js';
 import User from './User.js';
 interface Message {
     user: string;
@@ -7,10 +7,11 @@ interface Message {
     bot: string;
     bot_time: number;
 }
-export default class Thread extends GenericInitialise {
+export default class Thread extends Base {
     private _name;
     private _id;
     private _messages;
+    private _deleted;
     readonly user: User;
     constructor(option: XOR<{
         name: string;
@@ -23,6 +24,7 @@ export default class Thread extends GenericInitialise {
     get name(): string;
     get id(): string;
     get messages(): ReadonlyArray<Message>;
+    get deleted(): boolean;
     /**
      * saveBotMessage
      * the api lets the client save bot messages manually for some reason
@@ -32,7 +34,11 @@ export default class Thread extends GenericInitialise {
     /**
      * refreshMessages
      */
-    refreshThread(id?: string): Promise<void>;
+    refresh(id?: string): Promise<void>;
     sendMessage(userMessage: string, save?: boolean): Promise<string>;
+    /**
+     * delete
+     */
+    delete(): Promise<void>;
 }
 export {};

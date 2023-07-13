@@ -14,30 +14,35 @@ export async function request(route, method, options) {
         body,
     });
 }
-export class GenericInitialise {
+export class Base {
     constructor() {
         this._isInit = false;
-        const originalMethods = Object.getOwnPropertyNames(this.constructor.prototype);
-        for (const methodName of originalMethods) {
-            const originalMethod = this[methodName];
-            if (typeof originalMethod === 'function' &&
-                methodName !== 'initialise') {
-                this[methodName] = function (...args) {
-                    // Code snippet to be added to all methods
-                    if (!this._isInit) {
-                        throw new Error('Uninitialised');
-                    }
-                    // Call the original method
-                    return originalMethod.apply(this, args);
-                };
+        this._decorGlobal(() => {
+            if (!this._isInit) {
+                throw new Error('Uninitialised');
             }
-        }
+        }, ['initialise']);
     }
     /**
      * initialise
      */
     initialise() {
         this._isInit = true;
+    }
+    _decorGlobal(callback, exclude = []) {
+        const originalMethods = Object.getOwnPropertyNames(this.constructor.prototype);
+        for (const methodName of originalMethods) {
+            const originalMethod = this[methodName];
+            if (typeof originalMethod === 'function' &&
+                ![...exclude, 'constructor', '_decorGlobal'].includes(methodName)) {
+                this[methodName] = function (...args) {
+                    // Code snippet to be added to all methods
+                    callback(methodName);
+                    // Call the original method
+                    return originalMethod.apply(this, args);
+                };
+            }
+        }
     }
 }
 //# sourceMappingURL=utils.js.map

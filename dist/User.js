@@ -1,18 +1,21 @@
 import { parse } from 'node-html-parser';
-import { request, GenericInitialise } from './utils.js';
+import { request, Base } from './utils.js';
 import { Headers } from 'node-fetch';
-export default class User extends GenericInitialise {
+import cookie from 'cookie';
+export default class User extends Base {
     constructor(session = undefined) {
         super();
         this._session = session;
     }
     async initialise() {
         super.initialise();
-        const page = parse(await (await request('', 'GET', {
+        const res = await request('', 'GET', {
             headers: new Headers({
                 cookie: 'session=' + this._session,
             }),
-        })).text());
+        });
+        const page = parse(await res.text());
+        this._session = cookie.parse(res.headers.get('Set-Cookie')).session;
         this._uid = page.querySelector('#USERID').innerText;
         this._token = page.querySelector('#TTT').innerText;
     }

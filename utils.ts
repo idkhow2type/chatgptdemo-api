@@ -25,10 +25,27 @@ export async function request(
     });
 }
 
-export class GenericInitialise {
+export class Base {
     private _isInit: boolean;
     constructor() {
         this._isInit = false;
+        this._decorGlobal(() => {
+            if (!this._isInit) {
+                throw new Error('Uninitialised');
+            }
+        }, ['initialise']);
+    }
+    /**
+     * initialise
+     */
+    public initialise() {
+        this._isInit = true;
+    }
+
+    protected _decorGlobal(
+        callback: (methodName: string) => void,
+        exclude: Array<string> = []
+    ) {
         const originalMethods = Object.getOwnPropertyNames(
             this.constructor.prototype
         );
@@ -36,25 +53,19 @@ export class GenericInitialise {
             const originalMethod = this[methodName];
             if (
                 typeof originalMethod === 'function' &&
-                methodName !== 'initialise'
+                ![...exclude, 'constructor', '_decorGlobal'].includes(
+                    methodName
+                )
             ) {
                 this[methodName] = function (...args: any[]) {
                     // Code snippet to be added to all methods
-                    if (!this._isInit) {
-                        throw new Error('Uninitialised');
-                    }
+                    callback(methodName);
 
                     // Call the original method
                     return originalMethod.apply(this, args);
                 };
             }
         }
-    }
-    /**
-     * initialise
-     */
-    public initialise() {
-        this._isInit = true;
     }
 }
 
