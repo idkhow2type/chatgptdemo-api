@@ -75,13 +75,23 @@ export default class Thread extends Base {
      * calling this is not recommended, but it is possible
      */
     async saveBotMessage(botMessage, timestamp = Date.now()) {
-        return await request('update_messages', 'POST', {
-            body: JSON.stringify({
-                bot_response: botMessage,
-                chat_id: this._id,
-                timestamp,
-            }),
-        });
+        const index = this._messages.length - 1;
+        this._messages[index].bot = botMessage;
+        this._messages[index].bot_time = timestamp;
+        try {
+            return await request('update_messages', 'POST', {
+                body: JSON.stringify({
+                    bot_response: botMessage,
+                    chat_id: this._id,
+                    timestamp,
+                }),
+            });
+        }
+        catch (err) {
+            console.error(err);
+            this._messages[index].bot = null;
+            this._messages[index].bot_time = null;
+        }
     }
     /**
      * refreshMessages
@@ -102,12 +112,12 @@ export default class Thread extends Base {
         }
     }
     async sendMessage(userMessage, save = true) {
-        const message = {
+        this._messages.push({
             user: userMessage,
             user_time: Date.now(),
             bot: null,
             bot_time: null,
-        };
+        });
         const reader = (await request('chat_api_stream', 'POST', {
             body: JSON.stringify({
                 chat_id: this._id,
@@ -127,10 +137,7 @@ export default class Thread extends Base {
             return prev + (JSON.parse(curr).choices[0].delta.content ?? '');
         });
         if (save) {
-            message.bot = content;
-            message.bot_time = Date.now();
-            this.saveBotMessage(content, message.bot_time); // this might be awaited, prob dont need to
-            this._messages.push(message);
+            this.saveBotMessage(content, Date.now()); // this might be awaited, prob dont need to
         }
         return content;
     }

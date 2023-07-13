@@ -99,15 +99,26 @@ export default class Thread extends Base {
      */
     public async saveBotMessage(
         botMessage: string,
-        timestamp: number = Date.now()
+        timestamp: number = Date.now(),
     ) {
-        return await request('update_messages', 'POST', {
-            body: JSON.stringify({
-                bot_response: botMessage,
-                chat_id: this._id,
-                timestamp,
-            }),
-        });
+        const index = this._messages.length - 1
+
+        this._messages[index].bot = botMessage;
+        this._messages[index].bot_time = timestamp;
+        
+        try {
+            return await request('update_messages', 'POST', {
+                body: JSON.stringify({
+                    bot_response: botMessage,
+                    chat_id: this._id,
+                    timestamp,
+                }),
+            });
+        } catch (err) {
+            console.error(err);
+            this._messages[index].bot = null;
+            this._messages[index].bot_time = null;
+        }
     }
 
     /**
@@ -132,12 +143,12 @@ export default class Thread extends Base {
     }
 
     public async sendMessage(userMessage: string, save: boolean = true) {
-        const message: Message = {
+        this._messages.push({
             user: userMessage,
             user_time: Date.now(),
             bot: null,
             bot_time: null,
-        };
+        });
 
         const reader = (
             await request('chat_api_stream', 'POST', {
@@ -162,10 +173,7 @@ export default class Thread extends Base {
         });
 
         if (save) {
-            message.bot = content;
-            message.bot_time = Date.now();
-            this.saveBotMessage(content, message.bot_time); // this might be awaited, prob dont need to
-            this._messages.push(message);
+            this.saveBotMessage(content, Date.now()); // this might be awaited, prob dont need to
         }
 
         return content;
