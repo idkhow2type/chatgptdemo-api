@@ -1,5 +1,9 @@
-import 'dotenv/config';
 import { Headers } from 'node-fetch';
+interface secretsInterface {
+    cf_clearance: string;
+    user_agent: string;
+}
+export declare function initialise(value: secretsInterface): void;
 export declare function request(route: string, method: string, options?: {
     headers?: Headers;
     body?: any;

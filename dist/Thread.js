@@ -47,9 +47,10 @@ export default class Thread extends Base {
         }
     }
     set name(name) {
-        this.setNameAsync(name);
+        this._name = name;
+        this._setName(name);
     }
-    async setNameAsync(name) {
+    async _setName(name) {
         await request('update_chat_name', 'POST', {
             body: JSON.stringify({
                 chat_id: this._id,

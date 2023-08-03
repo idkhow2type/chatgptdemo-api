@@ -20,7 +20,7 @@ export default class Thread extends Base {
     }>, user: User);
     initialise(): Promise<void>;
     set name(name: string);
-    private setNameAsync;
+    private _setName;
     get name(): string;
     get id(): string;
     get messages(): ReadonlyArray<Message>;

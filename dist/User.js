@@ -15,9 +15,20 @@ export default class User extends Base {
             }),
         });
         const page = parse(await res.text());
+        function decodeString(encodedString, salt) {
+            encodedString = decodeURIComponent(encodedString);
+            var decodedString = '';
+            for (var i = 0; i < encodedString.length; i++) {
+                var charCode = encodedString.charCodeAt(i) - salt;
+                decodedString += String.fromCharCode(charCode);
+            }
+            return decodedString;
+        }
         this._session = cookie.parse(res.headers.get('Set-Cookie')).session;
         this._uid = page.querySelector('#USERID').innerText;
-        this._token = page.querySelector('#TTT').innerText;
+        this._token = decodeString(page.querySelector('#TTT').innerText, parseInt(page
+            .querySelector('.right-side-container>script')
+            .innerText.match(/(?<=new_token = decodeString\(token, )\d+(?=\);)/)[0]));
     }
     get uid() {
         return this._uid;

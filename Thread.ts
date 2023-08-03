@@ -65,9 +65,10 @@ export default class Thread extends Base {
     }
 
     public set name(name: string) {
-        this.setNameAsync(name);
+        this._name = name
+        this._setName(name);
     }
-    private async setNameAsync(name: string) {
+    private async _setName(name: string) {
         await request('update_chat_name', 'POST', {
             body: JSON.stringify({
                 chat_id: this._id,
@@ -99,13 +100,13 @@ export default class Thread extends Base {
      */
     public async saveBotMessage(
         botMessage: string,
-        timestamp: number = Date.now(),
+        timestamp: number = Date.now()
     ) {
-        const index = this._messages.length - 1
+        const index = this._messages.length - 1;
 
         this._messages[index].bot = botMessage;
         this._messages[index].bot_time = timestamp;
-        
+
         try {
             return await request('update_messages', 'POST', {
                 body: JSON.stringify({

@@ -1,16 +1,27 @@
-import 'dotenv/config';
 import { Headers } from 'node-fetch';
+
+// kinda hacky but it gives nice user experience
+interface secretsInterface {
+    cf_clearance: string;
+    user_agent: string;
+}
+let secrets: secretsInterface;
+export function initialise(value: secretsInterface) {
+    secrets = value;
+}
 
 export async function request(
     route: string,
     method: string,
-    options?: { headers?: Headers; body?: any }
+    options?: { headers?: Headers; body?: any },
 ) {
+    if (!secrets) throw new Error('Secrets not found');
+
     const { headers = new Headers(), body = null } = options;
 
     headers.set(
         'cookie',
-        `cf_clearance=${process.env.cf_clearance};${headers.get('cookie')}`
+        `cf_clearance=${secrets.cf_clearance};${headers.get('cookie')}`
     );
 
     return await fetch('https://chat.chatgptdemo.net/' + route, {
@@ -19,7 +30,8 @@ export async function request(
             ...headers,
             ['authority', 'chat.chatgptdemo.net'],
             ['content-type', 'application/json'],
-            ['user-agent', process.env.user_agent],
+            ['referer','https://chat.chatgptdemo.net/'],
+            ['user-agent', secrets.user_agent],
         ]),
         body,
     });
